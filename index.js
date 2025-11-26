@@ -194,16 +194,17 @@ app.use("/api/hotel", hotelRouter);
 app.use("/api/room", roomRouter);
 app.use("/api/bookings", bookingRouter);
 
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://thethang:thethang@cluster0.xtel9fw.mongodb.net/hotel-booking";
+
+console.log("🔍 MONGO_URI exists:", !!process.env.MONGO_URI);
+console.log("🔍 Using URI:", MONGO_URI ? "Connected" : "Missing");
+
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected successfully"))
+  .connect(MONGO_URI)
+  .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => {
-    console.error(" MongoDB connection error:", err);
-    process.exit(1); // Exit if cannot connect to DB
+    console.error("❌ MongoDB connection error:", err);
   });
 
 // Error handling middleware
