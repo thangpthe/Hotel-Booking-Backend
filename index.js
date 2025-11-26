@@ -105,3 +105,9 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+console.log("--- DEBUG ENV VARIABLES ---");
+console.log("PORT:", process.env.PORT);
+console.log("MONGO_URI:", process.env.MONGO_URI ? "Đã nhận" : "KHÔNG CÓ");
+console.log("JWT_SECRET:", process.env.JWT_SECRET ? "Đã nhận" : "KHÔNG CÓ (Lỗi tại đây)");
+console.log("---------------------------");
