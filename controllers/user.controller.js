@@ -36,37 +36,95 @@ export const SignUp = async (req,res) =>{
 //Login
 
 
-export const Login = async (req,res) => {
+// export const Login = async (req,res) => {
 
-    try{
-        const {email,password} = req.body;
-        if( !email || !password ){
-            return res.json({message:"All fields are required",success:false});
+//     try{
+//         const {email,password} = req.body;
+//         if( !email || !password ){
+//             return res.json({message:"All fields are required",success:false});
+//         }
+
+//         const user=await User.findOne({email});
+//         if(!user){
+//             return res.json({message:"User not found",success:false});
+//         }
+
+//         const isMatch = await bcrypt.compare(password,user.password);
+//         if(!user){
+//             return res.json({message:"Email or password invalid",success:false});
+//         }
+
+//         const token = jwt.sign({id: user._id,role:user.role},process.env.JWT_SECRET,{
+//             expiresIn:"1d",
+//         });
+
+//         res.cookie("token",token,{
+//             httpOnly:true,
+//             maxAge: 24 * 60 * 60 * 1000,
+//         });
+
+//         return res.json({message:"Login successful",success:true,user});
+
+//     }catch(e){
+//         return res.json({message:"Internal server error",success:false},e);
+//     }
+// }
+
+export const Login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // 1. Validate đầu vào
+        if (!email || !password) {
+            return res.status(400).json({ message: "All fields are required", success: false });
         }
 
-        const user=await User.findOne({email});
-        if(!user){
-            return res.json({message:"User not found",success:false});
+        // 2. Tìm User
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "User not found", success: false });
         }
 
-        const isMatch = await bcrypt.compare(password,user.password);
-        if(!user){
-            return res.json({message:"Email or password invalid",success:false});
+        // 3. Kiểm tra mật khẩu
+        const isMatch = await bcrypt.compare(password, user.password);
+        
+        // FIX LOGIC: Phải kiểm tra biến isMatch
+        if (!isMatch) { 
+            return res.status(400).json({ message: "Incorrect password", success: false });
         }
 
-        const token = jwt.sign({id: user._id,role:user.role},process.env.JWT_SECRET,{
-            expiresIn:"1d",
-        });
+        // 4. Kiểm tra JWT_SECRET trước khi tạo token (để debug)
+        if (!process.env.JWT_SECRET) {
+            throw new Error("Missing JWT_SECRET in .env file");
+        }
 
-        res.cookie("token",token,{
-            httpOnly:true,
+        // 5. Tạo Token
+        const token = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        );
+
+        // 6. Gửi Cookie
+        res.cookie("token", token, {
+            httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
+            secure: process.env.NODE_ENV === "production", // Bảo mật hơn
+            sameSite: 'strict'
         });
 
-        return res.json({message:"Login successful",success:true,user});
+        return res.status(200).json({ message: "Login successful", success: true, user });
 
-    }catch(e){
-        return res.json({message:"Internal server error",success:false},e);
+    } catch (error) {
+        // FIX RESPONSE: Log lỗi ra terminal server để đọc
+        console.error("LOGIN ERROR:", error.message); 
+        
+        // Trả về status 500 thực sự
+        return res.status(500).json({ 
+            message: "Internal server error", 
+            success: false, 
+            error: error.message 
+        });
     }
 }
 
