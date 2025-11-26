@@ -1,7 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
+const isProduction = process.env.NODE_ENV === "production";
 
 //SignUp
 
@@ -105,12 +105,12 @@ export const Login = async (req, res) => {
             { expiresIn: "1d" }
         );
 
-        // 6. Gửi Cookie
-        res.cookie("token", token, {
+       res.cookie("token", token, {
             httpOnly: true,
             maxAge: 24 * 60 * 60 * 1000,
-            secure: process.env.NODE_ENV === "production", // Bảo mật hơn
-            sameSite: 'strict'
+            
+            sameSite: isProduction ? 'none' : 'lax',
+            secure: isProduction ? true : false 
         });
 
         return res.status(200).json({ message: "Login successful", success: true, user });
