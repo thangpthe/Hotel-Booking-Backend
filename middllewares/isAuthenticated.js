@@ -1,63 +1,37 @@
-// import jwt from "jsonwebtoken";
-
-// // export const isAuthenticated = (req,res,next) => {
-// //     try{
-// //         const {token} = req.cookies;
-// //         if(!token){
-// //             return res.status(401).json({message:"Unauthorized",succes:false});
-// //         }
-// //         const decoded = jwt.verify(token,process.env.JWT_SECRET);
-// //         req.user = decoded;
-// //         next();
-// //     }catch(error){
-// //         return res.status(401).json({message:"Unauthorized",succes:false});
-// //     }
-// // }
-
-// export const isAuthenticated = (req,res,next) => {
-//     try{
-//         const {token} = req.cookies;
-//         console.log("[Auth Debug] Cookies received:", req.cookies); 
-
-//         if(!token){
-//             console.log("[Auth Debug] No token found in cookies");
-//             return res.status(401).json({message:"User not authenticated (Token missing)", success:false});
-//         }
-
-//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//         req.user = decoded;
-//         next();
-//     }catch(error){
-//         console.log("[Auth Debug] Token verification failed:", error.message);
-//         return res.status(401).json({message:"Invalid token", success:false});
-//     }
-// }
-
 import jwt from "jsonwebtoken";
 
 export const isAuthenticated = async (req, res, next) => {
     try {
         console.log('🔐 === AUTHENTICATION CHECK ===');
-        console.log('🍪 Cookies received:', Object.keys(req.cookies));
-        console.log('🍪 Token exists:', !!req.cookies.token);
+        console.log('🍪 Cookies:', Object.keys(req.cookies));
+        console.log('🔑 Authorization header:', req.headers.authorization ? 'Present' : 'None');
         
-        const token = req.cookies.token;
+        // Try to get token from cookie first
+        let token = req.cookies.token;
+        
+        // If no cookie, try Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+            if (authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7); // Remove 'Bearer ' prefix
+                console.log('✅ Using token from Authorization header');
+            }
+        } else if (token) {
+            console.log('✅ Using token from cookie');
+        }
         
         if (!token) {
-            console.log('❌ No token found');
+            console.log('❌ No token found in cookie or header');
             return res.status(401).json({ 
-                message: "Authentication required", 
+                message: "Authentication required. Please login.", 
                 success: false 
             });
         }
 
-        // ✅ DECODE TOKEN để xem payload
-        console.log('🎫 Token preview:', token.substring(0, 30) + '...');
-        
-        // Verify and decode
+        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
-        console.log('✅ Token decoded:', {
+        console.log('✅ Token verified for user:', {
             id: decoded.id,
             role: decoded.role,
             email: decoded.email
@@ -66,9 +40,24 @@ export const isAuthenticated = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        console.error('❌ Auth error:', error.name, error.message);
+        console.error('❌ Auth error:', error.name, '-', error.message);
+        
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ 
+                message: "Session expired. Please login again.", 
+                success: false 
+            });
+        }
+        
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ 
+                message: "Invalid token. Please login again.", 
+                success: false 
+            });
+        }
+        
         return res.status(401).json({ 
-            message: "Invalid or expired token", 
+            message: "Authentication failed", 
             success: false 
         });
     }

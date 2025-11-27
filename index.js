@@ -19,9 +19,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Middleware
-app.use(express.json());
 const allowedOrigins = [
-  "http://localhost:5173", 
+  "http://localhost:5173",
   "https://hotel-booking-frontend-nine-psi.vercel.app",
   "https://hotel-booking-frontend-thangpthes-projects.vercel.app",
   "https://hotel-booking-frontend-lyaetguox-thangpthes-projects.vercel.app"
@@ -34,8 +33,8 @@ app.use(cors({
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.log("Blocked by CORS:", origin); 
-            callback(new Error('Not allowed by CORS'));
+            console.log(" Blocked by CORS:", origin);
+            callback(null, false);
         }
     },
     credentials: true,
@@ -43,7 +42,7 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposedHeaders: ["Set-Cookie"]
 }));
-
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

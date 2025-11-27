@@ -209,21 +209,23 @@ export const Login = async (req, res) => {
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            console.log('❌ Password incorrect for:', email);
+            console.log('❌ Password incorrect');
             return res.status(400).json({ 
                 message: "Incorrect password", 
                 success: false 
             });
         }
 
-        // // Check JWT_SECRET
-        // if (!process.env.JWT_SECRET) {
-        //     throw new Error("Missing JWT_SECRET in .env file");
-        // }
+        // Check JWT_SECRET
+        if (!process.env.JWT_SECRET) {
+            throw new Error("Missing JWT_SECRET in .env file");
+        }
+
+        // Create token payload
         const tokenPayload = {
-            id: user._id.toString(), 
+            id: user._id.toString(),
             role: user.role,
-            email: user.email 
+            email: user.email
         };
 
         console.log('🎫 Creating token with payload:', tokenPayload);
@@ -236,19 +238,18 @@ export const Login = async (req, res) => {
 
         console.log('✅ Token created:', token.substring(0, 20) + '...');
 
-
-        // ✅ SET NEW COOKIE
+        // Set cookie (for same-origin requests)
         res.cookie("token", token, {
             httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            maxAge: 24 * 60 * 60 * 1000,
             sameSite: isProduction ? 'none' : 'lax',
-            secure: isProduction ? true : false,
+            secure: isProduction,
             path: '/'
         });
 
         console.log('✅ Cookie set for user:', user._id.toString());
 
-        // Don't send password to client
+        // Prepare user response (without password)
         const userResponse = {
             _id: user._id,
             name: user.name,
@@ -256,10 +257,12 @@ export const Login = async (req, res) => {
             role: user.role
         };
 
+        // Return token in response for cross-origin
         return res.status(200).json({ 
             message: "Login successful", 
             success: true, 
-            user: userResponse 
+            user: userResponse,
+            token // ✅ Send token in response
         });
 
     } catch (error) {
@@ -275,11 +278,12 @@ export const Login = async (req, res) => {
 // Logout
 export const Logout = async (req, res) => {
     try {
-        console.log('👋 Logging out user');  
+        console.log('👋 Logging out user');
+        
         res.clearCookie("token", {
             httpOnly: true,
             sameSite: isProduction ? 'none' : 'lax',
-            secure: isProduction ? true : false,
+            secure: isProduction,
             path: '/'
         });
         
@@ -301,7 +305,6 @@ export const GetProfile = async (req, res) => {
     try {
         console.log('👤 Getting profile for user ID:', req.user.id);
         
-        // Find user without password
         const user = await User.findById(req.user.id).select("-password");
         
         if (!user) {
