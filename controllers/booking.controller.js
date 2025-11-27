@@ -56,29 +56,48 @@ export const bookRoom = async (req,res) => {
             paymentMethod
         })
 
-        const mailOptions={
-            from:process.env.SENDER_EMAIL,
-            to:user.email,
-            subject:"Room booked successfully",
-            html: `
-            <h1>Hotel Booking Confirmation</h1>
-            <p>Dear ${user.name},</p>
-            <p>Thank you for booking with us.Your booking details are as follows:</p>
-            <ul>
-                <li>Booking ID: ${booking._id}</li>
-                <li>Hotel: ${roomData.hotel.hotelName}</li>
-                <li>Room Type: ${roomData.roomType}</li>
-                <li>Check in Date: ${checkInDate}</li>
-                <li>Check out Date: ${checkOutDate}</li>
-                <li>Number of Persons: ${persons}</li>
-                <li>Total Price: ${process.env.CURRENCY || "$"} ${totalPrice}</li>
-            </ul>
-            `,
+     try {
+            const mailOptions={
+                from: process.env.SENDER_EMAIL,
+                to: user.email,
+                subject: "Room booked successfully",
+                html: `
+                <h1>Hotel Booking Confirmation</h1>
+                <p>Dear ${user.name},</p>
+                <p>Thank you for booking with us. Your booking details are as follows:</p>
+                <ul>
+                    <li>Booking ID: ${booking._id}</li>
+                    <li>Hotel: ${roomData.hotel.hotelName}</li>
+                    <li>Room Type: ${roomData.roomType}</li>
+                    <li>Check in Date: ${checkInDate}</li>
+                    <li>Check out Date: ${checkOutDate}</li>
+                    <li>Number of Persons: ${persons}</li>
+                    <li>Total Price: ${process.env.CURRENCY || "$"} ${totalPrice}</li>
+                </ul>
+                `,
+            };
+            await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+            console.error("Email sending failed:", emailError);
         }
-         await transporter.sendMail(mailOptions);
-        return res.json({success: true, message: "Booked room successfully"});
+        
+        // IMPORTANT: Always return response
+        return res.status(200).json({
+            success: true, 
+            message: "Room booked successfully!",
+            booking: {
+                id: booking._id,
+                totalPrice: totalPrice
+            }
+        });
+        
     } catch (error) {
-        return res.status(500).json({message: "Internal server error"});
+        console.error("Booking error:", error);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false,
+            error: error.message
+        });
     }
 }
 
