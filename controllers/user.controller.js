@@ -216,16 +216,14 @@ export const Login = async (req, res) => {
             });
         }
 
-        // Check JWT_SECRET
-        if (!process.env.JWT_SECRET) {
-            throw new Error("Missing JWT_SECRET in .env file");
-        }
-
-        // ✅ CREATE TOKEN - Đảm bảo dùng đúng user._id
+        // // Check JWT_SECRET
+        // if (!process.env.JWT_SECRET) {
+        //     throw new Error("Missing JWT_SECRET in .env file");
+        // }
         const tokenPayload = {
-            id: user._id.toString(), // ✅ Convert ObjectId to string
+            id: user._id.toString(), 
             role: user.role,
-            email: user.email // ✅ Thêm email để debug dễ hơn
+            email: user.email 
         };
 
         console.log('🎫 Creating token with payload:', tokenPayload);
@@ -238,13 +236,6 @@ export const Login = async (req, res) => {
 
         console.log('✅ Token created:', token.substring(0, 20) + '...');
 
-        // ✅ CLEAR OLD COOKIE FIRST (Important!)
-        res.clearCookie("token", {
-            httpOnly: true,
-            sameSite: isProduction ? 'none' : 'lax',
-            secure: isProduction ? true : false,
-            path: '/'
-        });
 
         // ✅ SET NEW COOKIE
         res.cookie("token", token, {
@@ -284,8 +275,7 @@ export const Login = async (req, res) => {
 // Logout
 export const Logout = async (req, res) => {
     try {
-        console.log('👋 Logging out user');
-        
+        console.log('👋 Logging out user');  
         res.clearCookie("token", {
             httpOnly: true,
             sameSite: isProduction ? 'none' : 'lax',
