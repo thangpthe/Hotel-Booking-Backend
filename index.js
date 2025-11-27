@@ -51,8 +51,6 @@ app.use(cors({
     exposedHeaders: ["Set-Cookie"]
 }));
 
-// ✅ THÊM: Handle preflight requests
-app.options('*', cors());
 
 // Serve static files (images)
 app.use("/images", express.static(path.join(__dirname, "uploads")));
