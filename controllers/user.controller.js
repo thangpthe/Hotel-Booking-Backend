@@ -169,7 +169,7 @@ export const Logout = async (req, res) => {
 // Get Profile
 export const GetProfile = async (req, res) => {
     try {
-        console.log('👤 Getting profile for user ID:', req.user.id);
+        console.log(' Getting profile for user ID:', req.user.id);
         
         const user = await User.findById(req.user.id).select("-password");
         
