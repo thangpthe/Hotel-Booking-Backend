@@ -178,7 +178,7 @@ export const getHotelBookings = async (req,res) => {
 
 // ... các function khác giữ nguyên ...
 
-export const stripePayment = async (req, res) => {
+// export const stripePayment = async (req, res) => {
     try {
         const { bookingId } = req.body;
         
@@ -260,6 +260,85 @@ export const stripePayment = async (req, res) => {
 
     } catch (error) {
         console.error("Stripe Payment Error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Payment processing failed", 
+            error: error.message 
+        });
+    }
+// }
+
+export const stripePayment = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        
+        // 1. Validate input
+        if (!bookingId) {
+            return res.status(400).json({ success: false, message: "Booking ID is required" });
+        }
+
+        // 2. Lấy thông tin Booking
+        const booking = await Booking.findById(bookingId);
+        if (!booking) {
+            return res.status(404).json({ success: false, message: "Booking not found" });
+        }
+
+        // 3. Lấy thông tin Room & Hotel
+        const roomData = await Room.findById(booking.room).populate("hotel");
+        if (!roomData || !roomData.hotel) {
+            return res.status(404).json({ success: false, message: "Room or Hotel not found" });
+        }
+
+        const clientUrl = process.env.CLIENT_URL || req.headers.origin || 'http://localhost:5173';
+
+        const totalPrice = booking.totalPrice;
+
+        // 5. Khởi tạo Stripe
+        const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+        // 6. Tạo Line Items
+        const line_items = [
+            {
+                price_data: {
+                    currency: "usd",
+                    product_data: {
+                        name: roomData.hotel.hotelName,
+                        description: `${roomData.roomType} (${booking.persons} guests)`,
+                    },
+                    unit_amount: Math.round(totalPrice * 100),
+                },
+                quantity: 1,
+            }
+        ];
+
+        // 7. Tạo Checkout Session
+        const session = await stripeInstance.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items,
+            mode: "payment",
+            success_url: `${clientUrl}/my-bookings?payment=success&bookingId=${bookingId}`,
+            cancel_url: `${clientUrl}/my-bookings?payment=cancelled`,
+            metadata: {
+                bookingId: bookingId.toString(),
+            },
+            client_reference_id: bookingId.toString(),
+        });
+
+       
+        await Booking.findByIdAndUpdate(bookingId, {
+            isPaid: true,
+            status: "confirmed" 
+        });
+
+        // Trả về URL để frontend redirect
+        return res.json({ 
+            success: true, 
+            url: session.url,
+            sessionId: session.id 
+        });
+
+    } catch (error) {
+        console.error(" Stripe Payment Error:", error); 
         return res.status(500).json({ 
             success: false, 
             message: "Payment processing failed", 
