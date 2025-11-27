@@ -20,13 +20,6 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-// app.use(cors({
-//   origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : '*',
-//   credentials: true
-// }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
 const allowedOrigins = [
   "http://localhost:5173", 
   "https://hotel-booking-frontend-nine-psi.vercel.app",
@@ -50,6 +43,10 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     exposedHeaders: ["Set-Cookie"]
 }));
+
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 
 
 // Serve static files (images)
