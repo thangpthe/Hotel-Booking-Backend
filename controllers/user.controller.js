@@ -78,7 +78,8 @@ export const Login = async (req, res) => {
             maxAge: 24 * 60 * 60 * 1000,
             
             sameSite: isProduction ? 'none' : 'lax',
-            secure: isProduction ? true : false 
+            secure: isProduction ? true : false ,
+            path: '/'
         });
 
         return res.status(200).json({ message: "Login successful", success: true, user });
