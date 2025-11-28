@@ -8,6 +8,7 @@ hotelRouter.post("/register",upload.single("image"),isAuthenticated,isOwner,regi
 
 hotelRouter.get("/get",isAuthenticated,isOwner,getOwnerHotels);
 hotelRouter.get("/get-all",getAllHotels);
+router.get("/:id", getHotelById);
 hotelRouter.delete("/delete/:hotelId",isAuthenticated,isOwner,deleteHotel);
 
 export default hotelRouter;
