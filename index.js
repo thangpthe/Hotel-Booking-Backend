@@ -66,17 +66,17 @@ app.use("/api/hotel", hotelRouter);
 app.use("/api/room", roomRouter);
 app.use("/api/bookings", bookingRouter);
 
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://thethang:thethang@cluster0.xtel9fw.mongodb.net/hotel-booking";
+const MONGO_URI = process.env.MONGO_URI;
 
-console.log("🔍 MONGO_URI exists:", !!process.env.MONGO_URI);
-console.log("🔍 Using URI:", MONGO_URI ? "Connected" : "Missing");
+// console.log("🔍 MONGO_URI exists:", !!process.env.MONGO_URI);
+// console.log("🔍 Using URI:", MONGO_URI ? "Connected" : "Missing");
 
 // MongoDB Connection
 mongoose
   .connect(MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected successfully"))
+  .then(() => console.log("MongoDB connected successfully"))
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
+    console.error(" MongoDB connection error:", err);
   });
 
 // Error handling middleware

@@ -1,5 +1,5 @@
 import Room from "../models/room.model.js";
-
+import Booking from "../models/booking.model.js";
 export const addRoom = async (req,res) => {
     try {
         const {roomType,hotel,pricePerNight,description,amenities,isAvailable} = req.body;
@@ -100,22 +100,42 @@ export const getRoomById = async (req, res) => {
             })
             .exec();
         
-        if (!room) {
-            return res.status(404).json({
-                message: "Room not found",
-                success: false
-            });
-        }
+    //     if (!room) {
+    //         return res.status(404).json({
+    //             message: "Room not found",
+    //             success: false
+    //         });
+    //     }
         
-        return res.status(200).json({
-            room,
-            success: true
+    //     return res.status(200).json({
+    //         room,
+    //         success: true
+    //     });
+    // } catch (error) {
+    //     console.log("Error:", error);
+    //     return res.status(500).json({
+    //         message: "Internal server error",
+    //         success: false
+    //     });
+    // }
+        const now = new Date();
+        const currentBooking = await Booking.findOne({
+            room: room._id,
+            checkIn: { $lte: now },
+            checkOut: { $gt: now },
         });
+
+        const isOccupied = !!currentBooking;
+        if (room.isAvailable === isOccupied) { 
+            room.isAvailable = !isOccupied;
+            await room.save();
+            console.log(`🔄 Auto-updated Room ${room.roomType}: ${room.isAvailable ? 'Available' : 'Occupied'}`);
+        }
+
+        return res.status(200).json({ success: true, room });
+
     } catch (error) {
-        console.log("Error:", error);
-        return res.status(500).json({
-            message: "Internal server error",
-            success: false
-        });
+        console.log(error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
 }

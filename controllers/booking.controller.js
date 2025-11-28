@@ -55,33 +55,34 @@ export const bookRoom = async (req,res) => {
             totalPrice,
             paymentMethod
         })
-
-     try {
-            const mailOptions={
-                from: process.env.SENDER_EMAIL,
-                to: user.email,
-                subject: "Room booked successfully",
-                html: `
-                <h1>Hotel Booking Confirmation</h1>
-                <p>Dear ${user.name},</p>
-                <p>Thank you for booking with us. Your booking details are as follows:</p>
-                <ul>
-                    <li>Booking ID: ${booking._id}</li>
-                    <li>Hotel: ${roomData.hotel.hotelName}</li>
-                    <li>Room Type: ${roomData.roomType}</li>
-                    <li>Check in Date: ${checkInDate}</li>
-                    <li>Check out Date: ${checkOutDate}</li>
-                    <li>Number of Persons: ${persons}</li>
-                    <li>Total Price: ${process.env.CURRENCY || "$"} ${totalPrice}</li>
-                </ul>
-                `,
-            };
-            await transporter.sendMail(mailOptions);
-        } catch (emailError) {
-            console.error("Email sending failed:", emailError);
+        const now = new Date();
+        if (new Date(checkInDate) <= now && new Date(checkOutDate) > now) {
+            await Room.findByIdAndUpdate(room, { isAvailable: false });
         }
-        
-        // IMPORTANT: Always return response
+    //  try {
+    //         const mailOptions={
+    //             from: process.env.SENDER_EMAIL,
+    //             to: user.email,
+    //             subject: "Room booked successfully",
+    //             html: `
+    //             <h1>Hotel Booking Confirmation</h1>
+    //             <p>Dear ${user.name},</p>
+    //             <p>Thank you for booking with us. Your booking details are as follows:</p>
+    //             <ul>
+    //                 <li>Booking ID: ${booking._id}</li>
+    //                 <li>Hotel: ${roomData.hotel.hotelName}</li>
+    //                 <li>Room Type: ${roomData.roomType}</li>
+    //                 <li>Check in Date: ${checkInDate}</li>
+    //                 <li>Check out Date: ${checkOutDate}</li>
+    //                 <li>Number of Persons: ${persons}</li>
+    //                 <li>Total Price: ${process.env.CURRENCY || "$"} ${totalPrice}</li>
+    //             </ul>
+    //             `,
+    //         };
+    //         await transporter.sendMail(mailOptions);
+    //     } catch (emailError) {
+    //         console.error("Email sending failed:", emailError);
+    //     }
         return res.status(200).json({
             success: true, 
             message: "Room booked successfully!",
