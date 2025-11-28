@@ -1,4 +1,5 @@
 import Hotel from "../models/hotel.model.js";
+import Room from "../models/room.model.js";
 
 export const registerHotel = async (req,res) => {
     const {id} = req.user;
