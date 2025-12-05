@@ -83,7 +83,86 @@ export const deleteRoom = async (req,res) => {
     }
 }
 
-// room.controller.js
+
+// room.controller.js - Enhanced version
+export const updateRoom = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { 
+            hotel, 
+            roomType, 
+            pricePerNight, 
+            description, 
+            amenities, 
+            isAvailable,
+            keepExistingImages  // Array of existing image filenames to keep
+        } = req.body;
+        
+        const room = await Room.findById(roomId).populate('hotel');
+        
+        if (!room) {
+            return res.status(404).json({
+                message: "Room not found",
+                success: false
+            });
+        }
+        
+        // Check authorization
+        if (room.hotel.owner.toString() !== req.user.id) {
+            return res.status(403).json({ 
+                message: "You are not authorized to update this room", 
+                success: false 
+            });
+        }
+        
+        // Update fields
+        if (roomType) room.roomType = roomType;
+        if (pricePerNight) room.pricePerNight = pricePerNight;
+        if (description) room.description = description;
+        if (amenities) room.amenities = amenities;
+        if (typeof isAvailable !== 'undefined') room.isAvailable = isAvailable;
+        if (hotel) room.hotel = hotel;
+        
+        // Handle images
+        let updatedImages = [];
+        
+        // Keep existing images if specified
+        if (keepExistingImages) {
+            const imagesToKeep = Array.isArray(keepExistingImages) 
+                ? keepExistingImages 
+                : JSON.parse(keepExistingImages);
+            updatedImages = [...imagesToKeep];
+        }
+        
+        // Add new images
+        if (req.files && req.files.length > 0) {
+            const newImages = req.files.map(file => file.filename);
+            updatedImages = [...updatedImages, ...newImages];
+        }
+        
+        // Update images array if there are any changes
+        if (updatedImages.length > 0) {
+            room.images = updatedImages;
+        }
+        
+        await room.save();
+        await room.populate('hotel');
+        
+        return res.json({
+            message: "Room updated successfully",
+            success: true,
+            room
+        });
+        
+    } catch (error) {
+        console.error("Update room error:", error);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false,
+            error: error.message
+        });
+    }
+}
 
 export const getRoomById = async (req, res) => {
     try {
@@ -139,3 +218,4 @@ export const getRoomById = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
+
