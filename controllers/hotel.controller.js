@@ -57,9 +57,38 @@ export const deleteHotel = async (req,res) => {
     }
 }
 
-// hotel.controller.js
+export const updateHotel = async (req,res) => {
+    try{
+        const {hotelId} = req.params;
+        const {hotelName,hotelAddress,rating,price,amenities} = req.body;
+        const userId = req.user.id;
+        const hotel = await Hotel.findById(hotelId);
+        if(!hotel){
+            return res.status(404).json({message: "Hotel not found",success: false});
+        }
 
-// Get single hotel with all its rooms
+        if (hotel.owner.toString() !== userId) {
+            return res.status(403).json({ 
+                message: "You are not authorized to update this hotel", 
+                success: false 
+            });
+        }
+        
+        hotel.hotelName = hotelName || hotel.hotelName;
+        hotel.hotelAddress = hotelAddress || hotel.hotelAddress;
+        hotel.rating = rating || hotel.rating;
+        hotel.price = price || hotel.price;
+        hotel.amenities = amenities || hotel.amenities;
+        if(req.file){
+            hotel.image = req.file.filename;
+        }
+        await hotel.save();
+        return res.json({message: "Hotel updated successfully",success:true,hotel});
+    }catch(error){
+        console.log(error);
+        return res.status(500).json({message: "Internal server error",success: false});
+    }
+}
 export const getHotelById = async (req, res) => {
     try {
         const { id } = req.params;

@@ -129,7 +129,7 @@ export const getRoomById = async (req, res) => {
         if (room.isAvailable === isOccupied) { 
             room.isAvailable = !isOccupied;
             await room.save();
-            console.log(`🔄 Auto-updated Room ${room.roomType}: ${room.isAvailable ? 'Available' : 'Occupied'}`);
+            console.log(`Auto-updated Room ${room.roomType}: ${room.isAvailable ? 'Available' : 'Occupied'}`);
         }
 
         return res.status(200).json({ success: true, room });
