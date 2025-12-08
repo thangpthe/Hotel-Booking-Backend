@@ -212,3 +212,172 @@ export const stripePayment = async (req, res) => {
         });
     }
 }
+
+
+// Update Booking
+export const updateBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { checkInDate, checkOutDate, persons } = req.body;
+        const { id: userId } = req.user;
+
+        console.log(' Updating booking:', bookingId);
+
+        // Find booking
+        const booking = await Booking.findById(bookingId).populate('room');
+        
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        // Check authorization - only booking owner can update
+        if (booking.user.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not authorized to update this booking"
+            });
+        }
+
+        // Check if booking is already paid
+        if (booking.isPaid) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot modify paid bookings. Please contact support."
+            });
+        }
+
+        // Check if new dates overlap with existing bookings
+        if (checkInDate && checkOutDate) {
+            const isAvailable = await checkAvailability({
+                room: booking.room._id,
+                checkInDate,
+                checkOutDate
+            });
+
+            if (!isAvailable) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Room is not available for the selected dates"
+                });
+            }
+        }
+
+        // Calculate new price if dates or persons changed
+        let newTotalPrice = booking.totalPrice;
+        
+        if (checkInDate || checkOutDate || persons) {
+            const checkIn = new Date(checkInDate || booking.checkIn);
+            const checkOut = new Date(checkOutDate || booking.checkOut);
+            const guestCount = persons || booking.persons;
+            
+            const timeDiff = checkOut.getTime() - checkIn.getTime();
+            const nights = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            
+            const roomData = await Room.findById(booking.room._id);
+            newTotalPrice = roomData.pricePerNight * nights * guestCount;
+        }
+
+        // Update booking
+        booking.checkIn = checkInDate ? new Date(checkInDate) : booking.checkIn;
+        booking.checkOut = checkOutDate ? new Date(checkOutDate) : booking.checkOut;
+        booking.persons = persons || booking.persons;
+        booking.totalPrice = newTotalPrice;
+
+        await booking.save();
+        await booking.populate('hotel room');
+
+        console.log('Booking updated successfully');
+
+        return res.json({
+            success: true,
+            message: "Booking updated successfully",
+            booking
+        });
+
+    } catch (error) {
+        console.error('Update booking error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update booking",
+            error: error.message
+        });
+    }
+};
+
+// Delete/Cancel Booking
+export const deleteBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { id: userId, role } = req.user;
+
+        console.log('🗑️ Deleting booking:', bookingId);
+
+        // Find booking
+        const booking = await Booking.findById(bookingId).populate('room hotel');
+        
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+        }
+
+        // Check authorization
+        const isOwner = role === 'owner' && booking.hotel.owner.toString() === userId;
+        const isBookingUser = booking.user.toString() === userId;
+
+        if (!isOwner && !isBookingUser) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not authorized to delete this booking"
+            });
+        }
+
+        // Check if booking can be cancelled
+        const now = new Date();
+        const checkInDate = new Date(booking.checkIn);
+        
+        // Cannot cancel if check-in is within 24 hours
+        const hoursDifference = (checkInDate - now) / (1000 * 60 * 60);
+        
+        if (hoursDifference < 24 && hoursDifference > 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel booking within 24 hours of check-in"
+            });
+        }
+
+        // If already checked in, cannot cancel
+        if (now >= checkInDate && now < new Date(booking.checkOut)) {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel active booking. Please contact support."
+            });
+        }
+
+        // Update booking status to cancelled instead of deleting
+        booking.status = "Cancelled";
+        await booking.save();
+
+        // Update room availability if needed
+        await Room.findByIdAndUpdate(booking.room._id, { isAvailable: true });
+
+        console.log('Booking cancelled successfully');
+
+        return res.json({
+            success: true,
+            message: "Booking cancelled successfully"
+        });
+
+    } catch (error) {
+        console.error('Delete booking error:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to cancel booking",
+            error: error.message
+        });
+    }
+};
