@@ -221,7 +221,7 @@
 
 import Room from "../models/room.model.js";
 import Booking from "../models/booking.model.js";
-import Hotel from "../models/hotel.model.js"; // ← IMPORTANT: Add this import
+import Hotel from "../models/hotel.model.js"; 
 
 export const addRoom = async (req, res) => {
     try {
