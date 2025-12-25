@@ -21,9 +21,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://hotel-booking-frontend-nine-psi.vercel.app",
-  "https://hotel-booking-frontend-thangpthes-projects.vercel.app",
-  "https://hotel-booking-frontend-lyaetguox-thangpthes-projects.vercel.app"
+  process.env.CLIENT_URL
 ];
 
 app.use(cors({
