@@ -5,13 +5,38 @@ import Room from "../models/room.model.js";
 import User from "../models/user.model.js";
 import Stripe from "stripe";
 //
-export const checkAvailability = async ({room,checkInDate,checkOutDate}) => {
+export const checkAvailability = async ({room, checkInDate, checkOutDate}) => {
     try {
-        const booking = await Booking.find({room,checkInDate: { $lte: checkOutDate},checkOutDate: {$gte: checkInDate}});
+        // FIX: Dùng đúng field name 'checkIn'/'checkOut' theo schema
+        // Loại trừ booking đã Cancelled khi kiểm tra conflict
+        const booking = await Booking.find({
+            room,
+            status: { $ne: "Cancelled" },
+            checkIn: { $lt: new Date(checkOutDate) },
+            checkOut: { $gt: new Date(checkInDate) }
+        });
         const isAvailable = booking.length === 0;
         return isAvailable;
     } catch (error) {
         console.log(error);
+        return false;
+    }
+}
+
+// Lấy danh sách khoảng ngày đã đặt của một phòng (cho frontend calendar)
+export const getBookedDates = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const bookings = await Booking.find({
+            room: roomId,
+            status: { $ne: "Cancelled" },
+            checkOut: { $gte: new Date() } // Chỉ lấy booking chưa hết hạn
+        }).select("checkIn checkOut status");
+
+        return res.json({ success: true, bookings });
+    } catch (error) {
+        console.error("getBookedDates error:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
 
