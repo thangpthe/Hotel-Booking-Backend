@@ -21,17 +21,29 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
   process.env.CLIENT_URL
-];
+].filter(Boolean);
 
 app.use(cors({
     origin: function (origin, callback) {
+        // Allow requests with no origin (Postman, server-to-server)
         if (!origin) return callback(null, true);
+        
+        // Allow any localhost in development
+        if (process.env.NODE_ENV !== 'production' && (
+            origin.startsWith('http://localhost:') || 
+            origin.startsWith('http://127.0.0.1:')
+        )) {
+            return callback(null, true);
+        }
         
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.log(" Blocked by CORS:", origin);
+            console.log("Blocked by CORS:", origin);
             callback(null, false);
         }
     },

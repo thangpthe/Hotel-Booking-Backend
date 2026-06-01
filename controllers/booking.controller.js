@@ -1,4 +1,4 @@
-import transporter from "../config/nodemailer.js";
+// import transporter from "../config/nodemailer.js"; // unused - email feature disabled
 import Booking from "../models/booking.model.js";
 import Hotel from "../models/hotel.model.js";
 import Room from "../models/room.model.js";
